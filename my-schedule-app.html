@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>My Schedule</title>
+<meta name="theme-color" content="#b08060">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="My Schedule">
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Zen+Kaku+Gothic+New:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f0e8;
+    --bg2: #ede8dc;
+    --surface: #faf7f2;
+    --surface2: #f0ebe0;
+    --border: #d4c9b0;
+    --text: #3a3228;
+    --text-muted: #8c7e6a;
+    --accent: #b08060;
+    --accent2: #7a9e87;
+    --accent3: #c4789a;
+    --accent4: #8890c4;
+    --shadow: 0 2px 16px rgba(80,60,40,0.10);
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER ── */
+  .app-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .app-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+  }
+  .app-title span { font-style: italic; font-size: 13px; color: var(--text-muted); margin-left: 8px; }
+  .header-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 36px; height: 36px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+    transition: all 0.2s;
+  }
+  .icon-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+
+  /* ── LAYOUT ── */
+  .main-layout { display: flex; flex: 1; max-width: 1160px; margin: 0 auto; width: 100%; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 60px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px 0; gap: 6px;
+    min-height: calc(100vh - 57px);
+  }
+  .nav-btn {
+    width: 42px; height: 42px;
+    border-radius: 12px; border: none; background: none;
+    cursor: pointer; font-size: 19px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); transition: all 0.2s; position: relative;
+  }
+  .nav-btn:hover, .nav-btn.active { background: var(--bg2); color: var(--accent); }
+  .nav-btn.active::before {
+    content: ''; position: absolute; left: -6px;
+    top: 50%; transform: translateY(-50%);
+    width: 3px; height: 22px; background: var(--accent); border-radius: 2px;
+  }
+  .nav-tooltip {
+    position: absolute; left: 52px;
+    background: var(--text); color: white;
+    font-size: 11px; padding: 4px 8px; border-radius: 6px;
+    white-space: nowrap; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s; z-index: 200;
+  }
+  .nav-btn:hover .nav-tooltip { opacity: 1; }
+
+  /* ── CONTENT ── */
+  .content { flex: 1; padding: 22px; overflow-y: auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .panel-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px; font-weight: 300;
+    margin-bottom: 18px; color: var(--accent); letter-spacing: 0.04em;
+  }
+
+  /* ── CALENDAR ── */
+  .calendar-header {
+    display: flex; align-items: center;
+    justify-content: space-between; margin-bottom: 14px;
+  }
+  .cal-month {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px; font-weight: 300; letter-spacing: 0.04em;
+  }
+  .cal-month small { font-size: 13px; color: var(--text-muted); margin-left: 6px; font-family: 'Zen Kaku Gothic New', sans-serif; }
+  .cal-nav { display: flex; gap: 6px; }
+  .cal-nav-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 5px 13px;
+    cursor: pointer; font-size: 14px; color: var(--text-muted); transition: all 0.2s;
+  }
+  .cal-nav-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+
+  .calendar-layout { display: grid; grid-template-columns: 1fr 240px; gap: 16px; }
+
+  .weekdays { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; margin-bottom: 3px; }
+  .weekday { text-align: center; font-size: 11px; color: var(--text-muted); padding: 5px 0; letter-spacing: 0.06em; }
+  .weekday.sun { color: #c47070; }
+  .weekday.sat { color: var(--accent4); }
+
+  .calendar-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; grid-auto-rows: 72px; }
+  .cal-day {
+    background: var(--surface); border-radius: 9px;
+    min-height: 72px; padding: 5px;
+    cursor: pointer; border: 1px solid transparent; transition: all 0.15s;
+  }
+  .cal-day:hover { border-color: var(--accent); background: var(--surface2); }
+  .cal-day.today { border-color: var(--accent); background: #fdf6ed; }
+  .cal-day.today .day-num { color: var(--accent); font-weight: 600; }
+  .cal-day.other-month { opacity: 0.38; pointer-events: none; }
+  .cal-day.sun .day-num { color: #c47070; }
+  .cal-day.sat .day-num { color: var(--accent4); }
+  .day-num { font-size: 12px; margin-bottom: 3px; display: block; font-weight: 500; }
+  .day-events { display: flex; flex-direction: column; gap: 2px; }
+  .event-dot {
+    font-size: 9px; border-radius: 3px; padding: 1px 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 100%; color: white;
+  }
+
+  /* ── MONTH MEMO (right panel) ── */
+  .month-memo-panel {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .month-memo-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px; font-weight: 300;
+    color: var(--accent); letter-spacing: 0.04em;
+  }
+  .month-memo-ta {
+    flex: 1;
+    width: 100%;
+    min-height: 280px;
+    resize: none;
+    border: none;
+    background: var(--bg2);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.7;
+    outline: none;
+  }
+  .month-memo-ta::placeholder { color: var(--text-muted); }
+  .month-memo-hint { font-size: 10px; color: var(--text-muted); text-align: right; }
+
+  /* ── CATEGORY LEGEND ── */
+  .category-legend { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .cat-badge {
+    display: flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 20px; font-size: 11px;
+    background: var(--surface); border: 1px solid var(--border);
+  }
+  .cat-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  /* ── TODO ── */
+  .todo-add-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  .todo-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 13px; background: var(--surface);
+    border-radius: 10px; margin-bottom: 5px;
+    border: 1px solid var(--border); transition: all 0.15s;
+  }
+  .todo-item:hover { border-color: var(--accent2); }
+  .todo-check {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 1.5px solid var(--border); cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; font-size: 11px; color: transparent;
+  }
+  .todo-item.done .todo-check { background: var(--accent2); border-color: var(--accent2); color: white; }
+  .todo-item.done .todo-text { text-decoration: line-through; color: var(--text-muted); }
+  .todo-text { flex: 1; font-size: 13px; cursor: pointer; user-select: none; }
+  .todo-tag { font-size: 10px; padding: 2px 7px; border-radius: 20px; flex-shrink: 0; }
+  .todo-tag.t1 { background: #e8c4a0; color: #7a5a30; }
+  .todo-tag.t2 { background: #a8c4a8; color: #2a5a30; }
+  .todo-tag.t3 { background: #d4a8c4; color: #5a2a4a; }
+  .todo-del-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); font-size: 15px; padding: 2px 4px;
+    border-radius: 4px; line-height: 1; transition: color 0.15s; flex-shrink: 0;
+  }
+  .todo-del-btn:hover { color: var(--accent3); }
+
+  /* ── DIARY ── */
+  .diary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+  .diary-card {
+    background: var(--surface); border-radius: var(--radius);
+    border: 1px solid var(--border); overflow: hidden;
+    cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow);
+  }
+  .diary-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(80,60,40,0.14); }
+  .diary-card-cover {
+    width: 100%; height: 130px;
+    background: linear-gradient(135deg, var(--bg2), var(--border));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 38px; overflow: hidden;
+  }
+  .diary-card-cover img { width: 100%; height: 100%; object-fit: cover; }
+  .diary-card-body { padding: 11px 13px; }
+  .diary-card-date { font-size: 10px; color: var(--text-muted); letter-spacing: 0.08em; margin-bottom: 3px; }
+  .diary-card-title { font-size: 13px; font-weight: 400; margin-bottom: 5px; }
+  .diary-card-text { font-size: 11px; color: var(--text-muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .diary-img-thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .diary-img-thumb {
+    width: 64px; height: 64px; border-radius: 8px;
+    object-fit: cover; position: relative;
+  }
+  .diary-img-thumb-wrap { position: relative; width: 64px; height: 64px; }
+  .diary-img-thumb-wrap img { width: 64px; height: 64px; border-radius: 8px; object-fit: cover; }
+  .diary-img-rm {
+    position: absolute; top: -5px; right: -5px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--accent3); color: white; border: none;
+    cursor: pointer; font-size: 11px; display: flex;
+    align-items: center; justify-content: center; line-height: 1;
+  }
+
+  /* ── MODALS ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(50,40,30,0.4); z-index: 300;
+    align-items: center; justify-content: center; backdrop-filter: blur(2px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: 20px; padding: 26px;
+    width: 420px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 12px 40px rgba(50,40,30,0.2); animation: modalIn 0.22s ease;
+  }
+  .modal.sm { width: 360px; }
+  @keyframes modalIn {
+    from { transform: scale(0.95) translateY(8px); opacity: 0; }
+    to   { transform: scale(1)    translateY(0);   opacity: 1; }
+  }
+  .modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 21px; font-weight: 300; color: var(--accent); margin-bottom: 18px;
+  }
+  .form-group { margin-bottom: 13px; }
+  .form-label { font-size: 11px; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; display: block; }
+  .form-input {
+    width: 100%; padding: 9px 11px;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: var(--bg2); font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: 13px; color: var(--text); outline: none; transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--accent); }
+  textarea.form-input { resize: vertical; }
+  .cat-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .cat-tab {
+    display: flex; align-items: center; gap: 5px;
+    padding: 6px 12px; border-radius: 20px;
+    border: 1.5px solid var(--border); background: var(--bg2);
+    cursor: pointer; font-size: 12px; color: var(--text-muted);
+    font-family: 'Zen Kaku Gothic New', sans-serif; transition: all 0.15s;
+  }
+  .cat-tab:hover { border-color: var(--accent); color: var(--text); }
+  .cat-tab.selected { background: var(--surface); color: var(--text); font-weight: 500; }
+  .cat-tab-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
+  .btn-primary {
+    flex: 1; padding: 10px; background: var(--accent); color: white;
+    border: none; border-radius: 10px; font-size: 13px; cursor: pointer;
+    font-family: 'Zen Kaku Gothic New', sans-serif; transition: background 0.2s;
+  }
+  .btn-primary:hover { background: #8a6040; }
+  .btn-cancel {
+    padding: 10px 16px; background: var(--bg2); color: var(--text-muted);
+    border: 1px solid var(--border); border-radius: 10px; font-size: 13px;
+    cursor: pointer; font-family: 'Zen Kaku Gothic New', sans-serif; transition: all 0.2s;
+  }
+  .btn-cancel:hover { border-color: var(--text-muted); }
+  .btn-del {
+    padding: 10px 16px; background: #e8b4b4; color: #7a3030;
+    border: none; border-radius: 10px; font-size: 13px; cursor: pointer;
+    font-family: 'Zen Kaku Gothic New', sans-serif; transition: background 0.2s;
+  }
+  .btn-del:hover { background: #d49090; }
+  .add-event-btn {
+    width: 100%; padding: 9px; border-radius: 10px;
+    border: 1.5px dashed var(--border); background: none; cursor: pointer;
+    font-size: 12px; color: var(--text-muted); margin-top: 8px; transition: all 0.2s;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+  }
+  .add-event-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--bg2); }
+
+  /* Day popup event list */
+  .popup-event {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 9px 10px; border-radius: 10px; background: var(--bg2);
+    margin-bottom: 6px; cursor: pointer; transition: all 0.15s;
+  }
+  .popup-event:hover { background: var(--surface2); }
+  .popup-event-bar { width: 4px; border-radius: 2px; min-height: 32px; align-self: stretch; flex-shrink: 0; }
+  .popup-event-name { font-size: 13px; }
+  .popup-event-time { font-size: 11px; color: var(--text-muted); }
+
+  /* ── SETTINGS ── */
+  .settings-section { margin-bottom: 24px; }
+  .settings-section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px; font-weight: 300; color: var(--accent);
+    letter-spacing: 0.04em; margin-bottom: 12px;
+  }
+  .settings-cat-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px; margin-bottom: 6px;
+  }
+  .settings-color-input {
+    width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--border);
+    cursor: pointer; padding: 0; background: none; flex-shrink: 0;
+  }
+  .settings-save-hint { font-size: 11px; color: var(--text-muted); text-align: right; margin-top: 6px; }
+
+  @media (max-width: 720px) {
+    html, body { overflow-x: hidden; }
+
+    .main-layout { flex-direction: column; width: 100%; max-width: 100%; }
+
+    .sidebar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      width: 100%; min-height: auto; height: 60px;
+      flex-direction: row; justify-content: space-around; align-items: center;
+      padding: 0 8px env(safe-area-inset-bottom);
+      border-right: none; border-top: 1px solid var(--border);
+      z-index: 150;
+    }
+    .nav-btn { width: 52px; height: 52px; font-size: 22px; }
+    .nav-btn.active::before { display: none; }
+    .nav-tooltip { display: none; }
+
+    .content { width: 100%; padding: 12px 10px calc(68px + env(safe-area-inset-bottom)); box-sizing: border-box; }
+
+    .app-header { padding: 10px 14px; }
+    .app-title { font-size: 19px; }
+
+    .calendar-layout { grid-template-columns: 1fr; width: 100%; }
+    .calendar-grid { grid-auto-rows: 58px; width: 100%; }
+    .cal-day { padding: 3px; overflow: hidden; }
+    .day-num { font-size: 11px; }
+    .event-dot { font-size: 8px; padding: 1px 3px; }
+
+    .month-memo-panel { margin-top: 12px; }
+    .month-memo-ta { min-height: 160px; }
+
+    .modal-overlay { align-items: flex-end; }
+    .modal {
+      width: 100%; max-width: 100%;
+      border-radius: 20px 20px 0 0;
+      max-height: 88vh;
+      padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    }
+    .modal.sm { width: 100%; }
+
+    .diary-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .panel-title { font-size: 22px; }
+    .todo-add-row { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-title">My Schedule <span>— private —</span></div>
+  <div class="header-actions">
+    <button class="icon-btn" onclick="openAddEvent()" title="予定を追加">＋</button>
+  </div>
+</header>
+
+<div class="main-layout">
+  <nav class="sidebar">
+    <button class="nav-btn active" onclick="showPanel('calendar', this)">
+      🗓<span class="nav-tooltip">カレンダー</span>
+    </button>
+    <button class="nav-btn" onclick="showPanel('diary', this)">
+      📖<span class="nav-tooltip">日記</span>
+    </button>
+    <button class="nav-btn" onclick="showPanel('todo', this)">
+      ✅<span class="nav-tooltip">ToDo</span>
+    </button>
+    <button class="nav-btn" onclick="showPanel('settings', this)">
+      ⚙️<span class="nav-tooltip">設定</span>
+    </button>
+  </nav>
+
+  <main class="content">
+
+    <!-- CALENDAR -->
+    <div class="panel active" id="panel-calendar">
+      <div class="calendar-header">
+        <div class="cal-month" id="cal-month-label"></div>
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="changeMonth(-1)">‹</button>
+          <button class="cal-nav-btn" onclick="goToday()">今月</button>
+          <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
+        </div>
+      </div>
+      <div class="category-legend" id="category-legend"></div>
+      <div class="calendar-layout">
+        <div>
+          <div class="weekdays">
+            <div class="weekday sun">日</div><div class="weekday">月</div>
+            <div class="weekday">火</div><div class="weekday">水</div>
+            <div class="weekday">木</div><div class="weekday">金</div>
+            <div class="weekday sat">土</div>
+          </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+        </div>
+        <div class="month-memo-panel">
+          <div class="month-memo-title" id="memo-month-title"></div>
+          <textarea class="month-memo-ta" id="month-memo-ta"
+            placeholder="今月の振り返り、目標、気づき、なんでも…"
+            oninput="saveMonthMemo()"></textarea>
+          <div class="month-memo-hint" id="memo-saved-hint"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIARY -->
+    <div class="panel" id="panel-diary">
+      <div class="panel-title">Diary</div>
+      <div class="diary-grid" id="diary-grid-container"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="panel" id="panel-settings">
+      <div class="panel-title">Settings</div>
+      <div class="settings-section">
+        <div class="settings-section-title">カテゴリ</div>
+        <div id="settings-cats"></div>
+        <div class="settings-save-hint" id="settings-saved-hint"></div>
+        <button class="btn-primary" onclick="saveSettings()" style="margin-top:10px;">保存する</button>
+      </div>
+    </div>
+
+    <!-- TODO -->
+    <div class="panel" id="panel-todo">
+      <div class="panel-title">To Do</div>
+      <div class="todo-add-row">
+        <input id="todo-input" class="form-input" type="text"
+          placeholder="新しいToDoを入力…" onkeydown="if(event.key==='Enter') addTodo()">
+        <select id="todo-cat-select" class="form-input" style="flex:0;width:auto;padding:9px 8px;">
+          <option value="">なし</option>
+          <option value="趣味|t1">趣味</option>
+          <option value="おでかけ|t2">おでかけ</option>
+          <option value="大切な日|t3">大切な日</option>
+          <option value="目標|t2">目標</option>
+        </select>
+        <button class="btn-primary" onclick="addTodo()" style="flex:0;padding:9px 16px;white-space:nowrap;">追加</button>
+      </div>
+      <div id="todo-list-container"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- DAY POPUP -->
+<div class="modal-overlay" id="day-popup">
+  <div class="modal sm">
+    <div class="modal-title" id="day-popup-title"></div>
+    <div id="day-popup-events"></div>
+    <button class="add-event-btn" id="day-popup-add-btn">＋ 予定を追加する</button>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeDayPopup()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD / EDIT EVENT MODAL -->
+<div class="modal-overlay" id="event-modal">
+  <div class="modal">
+    <div class="modal-title" id="event-modal-title">新しい予定を追加</div>
+    <div class="form-group">
+      <label class="form-label">タイトル</label>
+      <input class="form-input" type="text" id="f-title" placeholder="例：友達とランチ" onkeydown="if(event.key==='Enter') saveEvent()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">日時</label>
+      <input class="form-input" type="datetime-local" id="f-datetime">
+    </div>
+    <div class="form-group">
+      <label class="form-label">メモ</label>
+      <textarea class="form-input" id="f-note" rows="2" placeholder="メモや詳細…"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">繰り返し</label>
+      <select class="form-input" id="f-repeat">
+        <option value="none">なし</option>
+        <option value="daily">毎日</option>
+        <option value="weekly">毎週</option>
+        <option value="monthly">毎月</option>
+        <option value="yearly">毎年</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">リマインド</label>
+      <select class="form-input" id="f-reminder">
+        <option value="none">なし</option>
+        <option value="day0">当日 0時</option>
+        <option value="60min">1時間前</option>
+        <option value="30min">30分前</option>
+        <option value="15min">15分前</option>
+        <option value="5min">5分前</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">カテゴリ</label>
+      <div class="cat-tabs" id="cat-tabs-container"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEventModal()">キャンセル</button>
+      <button class="btn-del" id="event-del-btn" style="display:none" onclick="deleteEvent()">削除</button>
+      <button class="btn-primary" id="event-save-btn" onclick="saveEvent()">追加する</button>
+    </div>
+  </div>
+</div>
+
+<!-- EVENT DETAIL MODAL -->
+<div class="modal-overlay" id="det-modal">
+  <div class="modal sm">
+    <div class="modal-title" id="det-title"></div>
+    <div id="det-body"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeDetModal()">閉じる</button>
+      <button class="btn-del"     onclick="deleteEventFromDet()">削除</button>
+      <button class="btn-primary" onclick="editEventFromDet()">編集</button>
+    </div>
+  </div>
+</div>
+
+<!-- DIARY MODAL -->
+<div class="modal-overlay" id="diary-modal">
+  <div class="modal">
+    <div class="modal-title" id="diary-modal-title">日記を書く</div>
+    <div class="form-group">
+      <label class="form-label">タイトル</label>
+      <input class="form-input" type="text" id="diary-title-input" placeholder="今日のこと">
+    </div>
+    <div class="form-group">
+      <label class="form-label">日付</label>
+      <input class="form-input" type="date" id="diary-date-input">
+    </div>
+    <div class="form-group">
+      <label class="form-label">内容</label>
+      <textarea class="form-input" id="diary-text-input" rows="5" placeholder="今日の出来事、感じたこと…"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">写真（最大4枚）</label>
+      <div class="diary-img-thumbs" id="diary-img-thumbs" style="margin-bottom:8px;"></div>
+      <button class="btn-cancel" id="diary-img-add-btn" onclick="triggerDiaryImg()"
+        style="font-size:12px;padding:6px 12px;">📷 写真を追加</button>
+      <input type="file" id="diary-img-file" accept="image/*" multiple style="display:none"
+        onchange="handleDiaryImgs(this)">
+    </div>
+    <div class="form-group">
+      <label class="form-label">絵文字（写真なしのとき表示）</label>
+      <input class="form-input" type="text" id="diary-emoji-input" placeholder="🌸" maxlength="2" style="width:72px;">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeDiaryModal()">キャンセル</button>
+      <button class="btn-del" id="diary-del-btn" style="display:none" onclick="deleteDiary()">削除</button>
+      <button class="btn-primary" onclick="saveDiary()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── UTILS ──────────────────────────────────────────────────────
+function lsGet(k,d){ try{ return JSON.parse(localStorage.getItem(k)||d); }catch(e){ return JSON.parse(d); } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function genId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function pad(n){ return String(n).padStart(2,'0'); }
+function dStr(y,m,d){ return `${y}-${pad(m)}-${pad(d)}`; }
+
+// ── DEFAULT DATA ───────────────────────────────────────────────
+const DEFAULT_EVENTS = [
+  // 16日：8件（最大・満開）
+  { id:'e01', name:'朝ヨガ',           start:'2026-05-16T07:00', time:'07:00', cat:'cat-1', note:'', emoji:'🧘' },
+  { id:'e02', name:'友達とモーニング', start:'2026-05-16T09:30', time:'09:30', cat:'cat-2', note:'', emoji:'☕' },
+  { id:'e03', name:'誕生日プレゼント購入', start:'2026-05-16T11:00', time:'11:00', cat:'cat-3', note:'', emoji:'🎁' },
+  { id:'e04', name:'映画鑑賞',         start:'2026-05-16T14:00', time:'14:00', cat:'cat-4', note:'', emoji:'🎬' },
+  { id:'e05', name:'カフェ読書',       start:'2026-05-16T16:30', time:'16:30', cat:'cat-1', note:'', emoji:'📚' },
+  { id:'e06', name:'夕焼け散歩',       start:'2026-05-16T18:00', time:'18:00', cat:'cat-2', note:'', emoji:'🌇' },
+  { id:'e07', name:'手紙を書く',       start:'2026-05-16T20:00', time:'20:00', cat:'cat-3', note:'', emoji:'✉️' },
+  { id:'e08', name:'読み聞かせ',       start:'2026-05-16T21:30', time:'21:30', cat:'cat-4', note:'', emoji:'🌙' },
+  // 12日：1件（蕾）
+  { id:'e09', name:'ネイル予約',       start:'2026-05-12T13:00', time:'13:00', cat:'cat-3', note:'', emoji:'💅' },
+  // 14日：2件
+  { id:'e10', name:'図書館',           start:'2026-05-14T10:00', time:'10:00', cat:'cat-1', note:'', emoji:'📖' },
+  { id:'e11', name:'友達とランチ',     start:'2026-05-14T12:30', time:'12:30', cat:'cat-2', note:'', emoji:'🍽️' },
+  // 19日：3件
+  { id:'e12', name:'フリマ',           start:'2026-05-19T10:00', time:'10:00', cat:'cat-2', note:'', emoji:'🛍️' },
+  { id:'e13', name:'美容院',           start:'2026-05-19T14:00', time:'14:00', cat:'cat-3', note:'', emoji:'✂️' },
+  { id:'e14', name:'スーパー',         start:'2026-05-19T17:00', time:'17:00', cat:'cat-4', note:'', emoji:'🛒' },
+  // 22日：5件
+  { id:'e15', name:'朝ランニング',     start:'2026-05-22T06:30', time:'06:30', cat:'cat-1', note:'', emoji:'🏃' },
+  { id:'e16', name:'ピクニック',       start:'2026-05-22T11:00', time:'11:00', cat:'cat-2', note:'', emoji:'🧺' },
+  { id:'e17', name:'母の日ランチ',     start:'2026-05-22T13:00', time:'13:00', cat:'cat-3', note:'', emoji:'💐' },
+  { id:'e18', name:'写真整理',         start:'2026-05-22T16:00', time:'16:00', cat:'cat-4', note:'', emoji:'🖼️' },
+  { id:'e19', name:'日記を書く',       start:'2026-05-22T21:00', time:'21:00', cat:'cat-1', note:'', emoji:'✏️' },
+  // 25日：4件
+  { id:'e20', name:'ヨガ教室',         start:'2026-05-25T09:00', time:'09:00', cat:'cat-1', note:'', emoji:'🧘' },
+  { id:'e21', name:'雑貨屋めぐり',     start:'2026-05-25T12:00', time:'12:00', cat:'cat-2', note:'', emoji:'🏪' },
+  { id:'e22', name:'記念日ディナー',   start:'2026-05-25T18:30', time:'18:30', cat:'cat-3', note:'', emoji:'🍷' },
+  { id:'e23', name:'映画',             start:'2026-05-25T21:00', time:'21:00', cat:'cat-4', note:'', emoji:'🎥' },
+];
+const DEFAULT_TODOS = [
+  { id:'t1', text:'カフェ巡りのリサーチ',       tag:'趣味',    tagClass:'t1', done:false },
+  { id:'t2', text:'本を2冊読む',               tag:'目標',    tagClass:'t2', done:true  },
+  { id:'t3', text:'友達に誕生日プレゼントを買う', tag:'大切な日', tagClass:'t3', done:false },
+];
+const DEFAULT_DIARIES = [
+  { id:'d1', date:'2026/05/10', title:'お花見 in 鶴舞公園', text:'天気も良くて、最高の花見日和だった。桜が満開で写真をたくさん撮った。', emoji:'🌸', images:[] },
+  { id:'d2', date:'2026/05/07', title:'新しいカフェを発見',  text:'駅近に素敵なカフェがオープンしてた。ラテアートがすごく可愛かった。', emoji:'☕', images:[] },
+  { id:'d3', date:'2026/04/28', title:'美術館へ',           text:'印象派の展覧会。モネの作品に圧倒された。また行きたい。',            emoji:'🎨', images:[] },
+];
+
+// ── STATE ──────────────────────────────────────────────────────
+let events  = lsGet('ms_events', '[]');
+let todos   = lsGet('ms_todos',   JSON.stringify(DEFAULT_TODOS));
+let diaries = lsGet('ms_diaries', JSON.stringify(DEFAULT_DIARIES));
+
+const _now = new Date();
+let curYear  = _now.getFullYear();
+let curMonth = _now.getMonth();
+
+let selCatId       = 'cat-1';
+let editEventId    = null;
+let detEventId     = null;
+let editDiaryId    = null;
+let diaryImgsBuf   = [];   // base64 array for diary being edited
+let dayPopupDay    = null; // { y, m, d }
+
+const MONTHS_JA = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DEFAULT_CATS = [
+  { id:'cat-1', name:'趣味',     color:'#b08060' },
+  { id:'cat-2', name:'おでかけ', color:'#7a9e87' },
+  { id:'cat-3', name:'大切な日', color:'#c4789a' },
+  { id:'cat-4', name:'その他',   color:'#8890c4' },
+];
+let CATS = lsGet('ms_cats', JSON.stringify(DEFAULT_CATS));
+function getCat(id){ return CATS.find(c=>c.id===id)||CATS[3]; }
+
+// ── CATEGORY LEGEND ────────────────────────────────────────────
+function renderLegend(){
+  document.getElementById('category-legend').innerHTML =
+    CATS.map(c=>`<div class="cat-badge"><div class="cat-dot" style="background:${c.color}"></div>${esc(c.name)}</div>`).join('');
+}
+
+// ── MONTH MEMO ─────────────────────────────────────────────────
+function memoKey(){ return `ms_note_${curYear}_${pad(curMonth+1)}`; }
+
+function loadMonthMemo(){
+  const ta   = document.getElementById('month-memo-ta');
+  const hint = document.getElementById('memo-saved-hint');
+  const ttl  = document.getElementById('memo-month-title');
+  ttl.textContent  = `${curYear}年${curMonth+1}月のメモ`;
+  ta.value         = lsGet(memoKey(), '""') || '';
+  hint.textContent = '';
+}
+
+let _memoTimer = null;
+function saveMonthMemo(){
+  clearTimeout(_memoTimer);
+  _memoTimer = setTimeout(()=>{
+    lsSet(memoKey(), JSON.stringify(document.getElementById('month-memo-ta').value));
+    const hint = document.getElementById('memo-saved-hint');
+    hint.textContent = '保存しました';
+    setTimeout(()=>{ hint.textContent=''; }, 1500);
+  }, 600);
+}
+
+// ── CALENDAR ───────────────────────────────────────────────────
+function renderCalendar(){
+  const grid  = document.getElementById('calendar-grid');
+  const label = document.getElementById('cal-month-label');
+  grid.innerHTML = '';
+  label.innerHTML = `${MONTHS_JA[curMonth]} <small>${curYear}</small>`;
+
+  const today     = new Date();
+  const firstDay  = new Date(curYear, curMonth, 1).getDay();
+  const daysInMon = new Date(curYear, curMonth+1, 0).getDate();
+  const daysInPrv = new Date(curYear, curMonth, 0).getDate();
+
+  for(let i=firstDay-1;i>=0;i--){
+    const c=document.createElement('div');
+    c.className='cal-day other-month';
+    c.innerHTML=`<span class="day-num">${daysInPrv-i}</span>`;
+    grid.appendChild(c);
+  }
+  for(let d=1;d<=daysInMon;d++){
+    const dt  = new Date(curYear,curMonth,d);
+    const dow = dt.getDay();
+    let cls   = 'cal-day';
+    if(dow===0) cls+=' sun';
+    if(dow===6) cls+=' sat';
+    if(d===today.getDate()&&curMonth===today.getMonth()&&curYear===today.getFullYear()) cls+=' today';
+
+    const evs = dayEvents(curYear, curMonth+1, d);
+    const dvs = dayDiaries(curYear, curMonth+1, d);
+    const c   = document.createElement('div');
+    c.className = cls;
+    const bg  = renderDayBg(evs, dvs);
+    if(bg) c.style.background = bg;
+    const extra = evs.length - 3;
+    c.innerHTML = `<span class="day-num">${d}</span><div class="day-events">${
+      evs.slice(0,3).map(e=>`<div class="event-dot" style="background:${getCat(e.cat).color}">${e.emoji?e.emoji+' ':''}${esc(e.name)}</div>`).join('')
+    }${extra>0?`<div class="event-dot" style="background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);">他${extra}件</div>`:''}${dvs.length>0?`<div class="event-dot" style="background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);">📖 ${dvs.length>1?dvs.length+'件':esc(dvs[0].title)}</div>`:''}</div>`;
+    c.onclick = ()=>openDayPopup(curYear, curMonth+1, d, evs);
+    grid.appendChild(c);
+  }
+  const remain = (firstDay+daysInMon)%7===0 ? 0 : 7-((firstDay+daysInMon)%7);
+  for(let d=1;d<=remain;d++){
+    const c=document.createElement('div');
+    c.className='cal-day other-month';
+    c.innerHTML=`<span class="day-num">${d}</span>`;
+    grid.appendChild(c);
+  }
+}
+
+function dayEvents(y,m,d){
+  const target=new Date(y,m-1,d);
+  return events.filter(e=>{
+    if(!e.start) return false;
+    const s=new Date(e.start);
+    const sDate=new Date(s.getFullYear(),s.getMonth(),s.getDate());
+    if(target<sDate) return false;
+    if(s.getFullYear()===y&&s.getMonth()+1===m&&s.getDate()===d) return true;
+    if(e.repeat==='daily') return true;
+    if(e.repeat==='weekly') return s.getDay()===target.getDay();
+    if(e.repeat==='monthly') return s.getDate()===d;
+    if(e.repeat==='yearly') return s.getMonth()+1===m&&s.getDate()===d;
+    return false;
+  });
+}
+// ── NOTIFICATIONS ──────────────────────────────────────────────
+const REMINDER_MS = { '5min':5*60000, '15min':15*60000, '30min':30*60000, '60min':60*60000 };
+
+async function requestNotifPermission(){
+  if(!('Notification' in window)) return false;
+  if(Notification.permission==='granted') return true;
+  if(Notification.permission==='denied') return false;
+  return (await Notification.requestPermission())==='granted';
+}
+
+function scheduleReminders(){
+  if(!('Notification' in window)||Notification.permission!=='granted') return;
+  const now=Date.now();
+  const week=7*24*60*60*1000;
+  events.forEach(ev=>{
+    if(!ev.reminder||ev.reminder==='none'||!ev.start) return;
+    getUpcomingTimes(ev, now, now+week).forEach(evTime=>{
+      let notifTime;
+      if(ev.reminder==='day0'){
+        const d=new Date(evTime);
+        notifTime=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
+      } else {
+        notifTime=evTime-REMINDER_MS[ev.reminder];
+      }
+      const delay=notifTime-now;
+      if(delay>0) setTimeout(()=>{
+        new Notification('My Schedule', { body:ev.name, icon:'./icon-192.png', tag:ev.id+notifTime });
+      }, delay);
+    });
+  });
+}
+
+function getUpcomingTimes(ev, from, to){
+  const base=new Date(ev.start).getTime();
+  if(!ev.repeat||ev.repeat==='none') return base>=from&&base<=to?[base]:[];
+  const result=[];
+  let cur=base;
+  const step=d=>{ const x=new Date(d);
+    if(ev.repeat==='daily') return x.getTime()+86400000;
+    if(ev.repeat==='weekly') return x.getTime()+7*86400000;
+    if(ev.repeat==='monthly'){ x.setMonth(x.getMonth()+1); return x.getTime(); }
+    if(ev.repeat==='yearly'){ x.setFullYear(x.getFullYear()+1); return x.getTime(); }
+  };
+  while(cur<from) cur=step(cur);
+  while(cur<=to){ result.push(cur); cur=step(cur); }
+  return result;
+}
+
+function dayDiaries(y,m,d){
+  const key=`${y}/${pad(m)}/${pad(d)}`;
+  return diaries.filter(dv=>dv.date===key);
+}
+function hexToRgba(hex, a){
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+function renderDayBg(evs, dvs){
+  const colors=[...evs.map(e=>getCat(e.cat).color), ...dvs.map(()=>'#c4789a')];
+  if(colors.length===0) return null;
+  const opacity=Math.min(0.10+colors.length*0.06, 0.36);
+  const unique=[...new Set(colors)];
+  if(unique.length===1) return hexToRgba(unique[0], opacity);
+  const stops=unique.map((c,i)=>`${hexToRgba(c,opacity)} ${Math.round(i*100/(unique.length-1))}%`).join(', ');
+  return `linear-gradient(135deg, ${stops})`;
+}
+
+function changeMonth(dir){
+  curMonth+=dir;
+  if(curMonth>11){ curMonth=0; curYear++; }
+  if(curMonth<0) { curMonth=11; curYear--; }
+  renderCalendar();
+  loadMonthMemo();
+}
+function goToday(){
+  const t=new Date();
+  curYear=t.getFullYear(); curMonth=t.getMonth();
+  renderCalendar(); loadMonthMemo();
+}
+
+// ── DAY POPUP ──────────────────────────────────────────────────
+function openDayPopup(y,m,d,evs){
+  dayPopupDay = {y,m,d};
+  document.getElementById('day-popup-title').textContent = `${y}年${m}月${d}日`;
+  const el = document.getElementById('day-popup-events');
+  const dvs = dayDiaries(y,m,d);
+  const evHtml = evs.length===0
+    ? `<div style="text-align:center;padding:10px 0 4px;color:var(--text-muted);font-size:12px;">予定はありません</div>`
+    : evs.map(e=>`
+        <div class="popup-event" onclick="openDetModal('${e.id}')">
+          <div class="popup-event-bar" style="background:${getCat(e.cat).color}"></div>
+          <div>
+            <div class="popup-event-name">${esc(e.name)}</div>
+            <div class="popup-event-time">${e.time||'終日'}</div>
+          </div>
+        </div>`).join('');
+  const diaryHtml = `
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+      <div style="font-size:11px;color:var(--text-muted);letter-spacing:0.06em;margin-bottom:6px;">📖 日記</div>
+      ${dvs.map(dv=>`
+        <div class="popup-event" onclick="openDiaryFromCalendar('${dv.id}')">
+          <div class="popup-event-bar" style="background:var(--accent3)"></div>
+          <div>
+            <div class="popup-event-name">${esc(dv.title)}</div>
+            <div class="popup-event-time">${dv.date}</div>
+          </div>
+        </div>`).join('')}
+      <button class="add-event-btn" onclick="openDiaryNewForDay('${y}-${pad(m)}-${pad(d)}')">✏️ 日記を書く</button>
+    </div>`;
+  el.innerHTML = evHtml + diaryHtml;
+  document.getElementById('day-popup-add-btn').onclick = ()=>{
+    closeDayPopup();
+    openAddEvent(`${y}-${pad(m)}-${pad(d)}`);
+  };
+  document.getElementById('day-popup').classList.add('open');
+}
+function closeDayPopup(){ document.getElementById('day-popup').classList.remove('open'); }
+function openDiaryFromCalendar(id){
+  closeDayPopup();
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-diary').classList.add('active');
+  document.querySelectorAll('.nav-btn')[1].classList.add('active');
+  renderDiaries();
+  setTimeout(()=>openDiaryEdit(id), 80);
+}
+function openDiaryNewForDay(dateStr){
+  closeDayPopup();
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-diary').classList.add('active');
+  document.querySelectorAll('.nav-btn')[1].classList.add('active');
+  renderDiaries();
+  setTimeout(()=>{ openDiaryNew(); document.getElementById('diary-date-input').value=dateStr; }, 80);
+}
+
+// ── ADD / EDIT EVENT ───────────────────────────────────────────
+function openAddEvent(dateStr){
+  editEventId = null;
+  document.getElementById('event-modal-title').textContent = '新しい予定を追加';
+  document.getElementById('event-del-btn').style.display   = 'none';
+  document.getElementById('event-save-btn').textContent    = '追加する';
+  document.getElementById('f-title').value    = '';
+  document.getElementById('f-note').value     = '';
+  document.getElementById('f-datetime').value = dateStr ? `${dateStr}T09:00` : '';
+  document.getElementById('f-repeat').value   = 'none';
+  document.getElementById('f-reminder').value = 'none';
+  selCatId = 'cat-1';
+  renderCatTabs('cat-1');
+  document.getElementById('event-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('f-title').focus(), 80);
+}
+function openEditEvent(id){
+  const ev=events.find(e=>e.id===id); if(!ev) return;
+  editEventId=id;
+  document.getElementById('event-modal-title').textContent = '予定を編集';
+  document.getElementById('event-del-btn').style.display   = 'inline-block';
+  document.getElementById('event-save-btn').textContent    = '保存する';
+  document.getElementById('f-title').value    = ev.name;
+  document.getElementById('f-datetime').value = ev.start||'';
+  document.getElementById('f-note').value     = ev.note||'';
+  document.getElementById('f-repeat').value   = ev.repeat||'none';
+  document.getElementById('f-reminder').value = ev.reminder||'none';
+  selCatId=ev.cat||'cat-1';
+  renderCatTabs(selCatId);
+  closeDetModal();
+  document.getElementById('event-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('f-title').focus(), 80);
+}
+function closeEventModal(){ document.getElementById('event-modal').classList.remove('open'); }
+function selectCat(el){
+  document.querySelectorAll('.cat-tab').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected'); selCatId=el.dataset.cat;
+}
+function saveEvent(){
+  const name=document.getElementById('f-title').value.trim();
+  if(!name){
+    const el=document.getElementById('f-title');
+    el.style.borderColor='var(--accent3)'; el.focus();
+    setTimeout(()=>el.style.borderColor='',1500); return;
+  }
+  const dt=document.getElementById('f-datetime').value;
+  const reminder=document.getElementById('f-reminder').value;
+  const ev={ id:editEventId||genId(), name, start:dt,
+    time:dt?dt.split('T')[1]:'', cat:selCatId||'cat-1',
+    note:document.getElementById('f-note').value.trim(),
+    repeat:document.getElementById('f-repeat').value,
+    reminder };
+  if(reminder!=='none') requestNotifPermission().then(ok=>{ if(ok) scheduleReminders(); });
+  if(editEventId){ const i=events.findIndex(e=>e.id===editEventId); if(i>=0) events[i]=ev; }
+  else events.push(ev);
+  lsSet('ms_events',JSON.stringify(events));
+  renderCalendar();
+  closeEventModal();
+}
+function deleteEvent(){
+  if(!editEventId||!confirm('この予定を削除しますか？')) return;
+  events=events.filter(e=>e.id!==editEventId);
+  lsSet('ms_events',JSON.stringify(events));
+  renderCalendar(); closeEventModal();
+}
+
+// ── EVENT DETAIL ───────────────────────────────────────────────
+function openDetModal(id){
+  const ev=events.find(e=>e.id===id); if(!ev) return;
+  detEventId=id;
+  const cat=getCat(ev.cat);
+  let dtStr='';
+  if(ev.start){ const d=new Date(ev.start); dtStr=`${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())}${ev.time?' '+ev.time:''}`; }
+  document.getElementById('det-title').textContent=ev.name;
+  document.getElementById('det-body').innerHTML=`
+    <div style="height:3px;border-radius:2px;background:${cat.color};margin-bottom:14px;"></div>
+    ${dtStr?`<div style="font-size:12px;color:var(--text-muted);margin-bottom:7px;">📅 ${dtStr}</div>`:''}
+    <div style="font-size:12px;margin-bottom:7px;display:flex;align-items:center;gap:5px;">
+      <span style="width:7px;height:7px;border-radius:50%;background:${cat.color};display:inline-block;"></span>${cat.name}
+    </div>
+    ${ev.note?`<div style="font-size:12px;color:var(--text-muted);white-space:pre-wrap;line-height:1.6;">📝 ${esc(ev.note)}</div>`:''}`;
+  closeDayPopup();
+  document.getElementById('det-modal').classList.add('open');
+}
+function closeDetModal(){ document.getElementById('det-modal').classList.remove('open'); }
+function editEventFromDet(){ openEditEvent(detEventId); }
+function deleteEventFromDet(){
+  if(!confirm('この予定を削除しますか？')) return;
+  events=events.filter(e=>e.id!==detEventId);
+  lsSet('ms_events',JSON.stringify(events));
+  renderCalendar(); closeDetModal();
+}
+
+// ── TODO ───────────────────────────────────────────────────────
+function renderTodos(){
+  const el=document.getElementById('todo-list-container'); if(!el) return;
+  if(!todos.length){
+    el.innerHTML=`<div style="text-align:center;padding:28px;color:var(--text-muted);font-size:12px;">ToDoがありません ✨</div>`; return;
+  }
+  el.innerHTML=todos.map(t=>`
+    <div class="todo-item ${t.done?'done':''}">
+      <div class="todo-check" onclick="toggleTodo('${t.id}')">✓</div>
+      <div class="todo-text"  onclick="toggleTodo('${t.id}')">${esc(t.text)}</div>
+      ${t.tag?`<div class="todo-tag ${t.tagClass}">${t.tag}</div>`:''}
+      <button class="todo-del-btn" onclick="deleteTodo('${t.id}')">×</button>
+    </div>`).join('');
+}
+function toggleTodo(id){
+  const t=todos.find(t=>t.id===id); if(!t) return;
+  t.done=!t.done; lsSet('ms_todos',JSON.stringify(todos)); renderTodos();
+}
+function deleteTodo(id){
+  todos=todos.filter(t=>t.id!==id); lsSet('ms_todos',JSON.stringify(todos)); renderTodos();
+}
+function addTodo(){
+  const inp=document.getElementById('todo-input');
+  const text=inp.value.trim(); if(!text){ inp.focus(); return; }
+  const v=document.getElementById('todo-cat-select').value;
+  const [tag,tc]=v?v.split('|'):['',''];
+  todos.push({ id:genId(), text, done:false, tag:tag||'', tagClass:tc||'' });
+  lsSet('ms_todos',JSON.stringify(todos));
+  inp.value=''; renderTodos(); inp.focus();
+}
+
+// ── DIARY ──────────────────────────────────────────────────────
+function renderDiaries(){
+  const grid=document.getElementById('diary-grid-container'); if(!grid) return;
+  const cards=diaries.map(d=>{
+    const coverHtml = d.images&&d.images.length
+      ? `<img src="${d.images[0]}" alt="">`
+      : (d.emoji||'📝');
+    return `
+      <div class="diary-card" onclick="openDiaryEdit('${d.id}')">
+        <div class="diary-card-cover">${coverHtml}</div>
+        <div class="diary-card-body">
+          <div class="diary-card-date">${d.date}</div>
+          <div class="diary-card-title">${esc(d.title)}</div>
+          <div class="diary-card-text">${esc(d.text)}</div>
+        </div>
+      </div>`;
+  }).join('');
+  const newCard=`
+    <div class="diary-card" style="border:1.5px dashed var(--border);background:none;display:flex;align-items:center;justify-content:center;min-height:195px;" onclick="openDiaryNew()">
+      <div style="text-align:center;color:var(--text-muted);font-size:12px;">
+        <div style="font-size:26px;margin-bottom:7px;">✏️</div>新しく書く
+      </div>
+    </div>`;
+  grid.innerHTML=cards+newCard;
+}
+
+function openDiaryNew(){
+  editDiaryId=null; diaryImgsBuf=[];
+  document.getElementById('diary-modal-title').textContent='日記を書く';
+  document.getElementById('diary-del-btn').style.display='none';
+  document.getElementById('diary-title-input').value='';
+  document.getElementById('diary-text-input').value='';
+  document.getElementById('diary-emoji-input').value='';
+  const t=new Date();
+  document.getElementById('diary-date-input').value=`${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`;
+  renderDiaryImgThumbs();
+  document.getElementById('diary-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('diary-title-input').focus(),80);
+}
+function openDiaryEdit(id){
+  const d=diaries.find(d=>d.id===id); if(!d) return;
+  editDiaryId=id; diaryImgsBuf=[...(d.images||[])];
+  document.getElementById('diary-modal-title').textContent='日記を編集';
+  document.getElementById('diary-del-btn').style.display='inline-block';
+  document.getElementById('diary-title-input').value=d.title;
+  document.getElementById('diary-text-input').value=d.text;
+  document.getElementById('diary-emoji-input').value=d.emoji||'';
+  document.getElementById('diary-date-input').value=d.date.replace(/\//g,'-');
+  renderDiaryImgThumbs();
+  document.getElementById('diary-modal').classList.add('open');
+}
+function closeDiaryModal(){ document.getElementById('diary-modal').classList.remove('open'); }
+
+function renderDiaryImgThumbs(){
+  const el=document.getElementById('diary-img-thumbs');
+  el.innerHTML=diaryImgsBuf.map((img,i)=>`
+    <div class="diary-img-thumb-wrap">
+      <img src="${img}" alt="">
+      <button class="diary-img-rm" onclick="removeDiaryImg(${i})">×</button>
+    </div>`).join('');
+  document.getElementById('diary-img-add-btn').style.display=
+    diaryImgsBuf.length>=4 ? 'none' : 'inline-block';
+}
+function removeDiaryImg(i){
+  diaryImgsBuf.splice(i,1); renderDiaryImgThumbs();
+}
+function triggerDiaryImg(){ document.getElementById('diary-img-file').click(); }
+function handleDiaryImgs(input){
+  const files=[...input.files];
+  const slots=4-diaryImgsBuf.length;
+  files.slice(0,slots).forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        const max=800; const r=Math.min(max/img.width, max/img.height, 1);
+        canvas.width=Math.round(img.width*r); canvas.height=Math.round(img.height*r);
+        canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+        diaryImgsBuf.push(canvas.toDataURL('image/jpeg',0.82));
+        renderDiaryImgThumbs();
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value='';
+}
+function saveDiary(){
+  const title=document.getElementById('diary-title-input').value.trim();
+  if(!title){
+    const el=document.getElementById('diary-title-input');
+    el.style.borderColor='var(--accent3)'; el.focus();
+    setTimeout(()=>el.style.borderColor='',1500); return;
+  }
+  const dv=document.getElementById('diary-date-input').value;
+  const t=new Date();
+  const date=dv?dv.replace(/-/g,'/'):`${t.getFullYear()}/${pad(t.getMonth()+1)}/${pad(t.getDate())}`;
+  const entry={
+    id: editDiaryId||genId(), title, date,
+    text: document.getElementById('diary-text-input').value.trim(),
+    emoji: document.getElementById('diary-emoji-input').value.trim()||'📝',
+    images: [...diaryImgsBuf],
+  };
+  if(editDiaryId){ const i=diaries.findIndex(d=>d.id===editDiaryId); if(i>=0) diaries[i]=entry; }
+  else diaries.unshift(entry);
+  lsSet('ms_diaries',JSON.stringify(diaries));
+  closeDiaryModal(); renderDiaries();
+}
+function deleteDiary(){
+  if(!editDiaryId||!confirm('この日記を削除しますか？')) return;
+  diaries=diaries.filter(d=>d.id!==editDiaryId);
+  lsSet('ms_diaries',JSON.stringify(diaries));
+  closeDiaryModal(); renderDiaries();
+}
+
+// ── CAT TABS ───────────────────────────────────────────────────
+function renderCatTabs(selectedId){
+  const sel = selectedId || selCatId || 'cat-1';
+  document.getElementById('cat-tabs-container').innerHTML = CATS.map(c=>
+    `<button class="cat-tab${c.id===sel?' selected':''}" data-cat="${c.id}" onclick="selectCat(this)">
+      <span class="cat-tab-dot" style="background:${c.color}"></span>${esc(c.name)}
+    </button>`
+  ).join('');
+}
+
+// ── SETTINGS ───────────────────────────────────────────────────
+function renderSettings(){
+  document.getElementById('settings-cats').innerHTML = CATS.map(c=>`
+    <div class="settings-cat-row">
+      <input type="color" class="settings-color-input" id="sc-color-${c.id}" value="${c.color}">
+      <input type="text" class="form-input" id="sc-name-${c.id}" value="${c.name}" placeholder="カテゴリ名">
+    </div>`).join('');
+}
+function saveSettings(){
+  CATS.forEach(c=>{
+    c.color = document.getElementById(`sc-color-${c.id}`).value;
+    const n = document.getElementById(`sc-name-${c.id}`).value.trim();
+    if(n) c.name = n;
+  });
+  lsSet('ms_cats', JSON.stringify(CATS));
+  renderLegend(); renderCalendar(); renderCatTabs();
+  const hint = document.getElementById('settings-saved-hint');
+  hint.textContent = '保存しました';
+  setTimeout(()=>{ hint.textContent=''; }, 1500);
+}
+
+// ── PANEL NAV ──────────────────────────────────────────────────
+function showPanel(name,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='todo')     renderTodos();
+  if(name==='diary')    renderDiaries();
+  if(name==='settings') renderSettings();
+}
+
+// ── CLOSE ON BACKDROP / ESC ────────────────────────────────────
+['day-popup','event-modal','det-modal','diary-modal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')
+    ['day-popup','event-modal','det-modal','diary-modal']
+      .forEach(id=>document.getElementById(id).classList.remove('open'));
+});
+
+// ── INIT ───────────────────────────────────────────────────────
+renderLegend();
+renderCalendar();
+loadMonthMemo();
+renderCatTabs();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+if(Notification&&Notification.permission==='granted') scheduleReminders();
+
+// ── SWIPE で月移動 ─────────────────────────────────────────────
+let _tx = 0, _ty = 0;
+document.getElementById('panel-calendar').addEventListener('touchstart', e=>{
+  _tx = e.touches[0].clientX;
+  _ty = e.touches[0].clientY;
+}, { passive: true });
+document.getElementById('panel-calendar').addEventListener('touchend', e=>{
+  const dx = e.changedTouches[0].clientX - _tx;
+  const dy = e.changedTouches[0].clientY - _ty;
+  if(Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50){
+    changeMonth(dx < 0 ? 1 : -1);
+  }
+}, { passive: true });
+</script>
+</body>
+</html>
